@@ -1,0 +1,99 @@
+---
+title: 'Reproducible Research Coursera: Peer Assessment 1'
+---
+
+1. Code for reading in the dataset and/or processing the data
+
+```{r}
+unzip ("C:/Users/desrjus/Documents/R Files/Coursera/RepData_PeerAssessment1/activity.zip")
+
+activityData <- read.csv("C:/Users/desrjus/Documents/R Files/Coursera/RepData_PeerAssessment1/activity.csv")
+summary(activityData)
+```
+
+2. Histogram of the total number of steps taken each day
+
+```{r}
+steps.per.day <- aggregate(steps ~ date, activityData, sum, na.rm=T)
+hist(steps.per.day$steps)
+```
+
+3. Mean and median number of steps taken each day
+
+```{r}
+mean.steps.per.day <- mean(steps.per.day$steps)
+mean.steps.per.day
+median.steps.per.day <- median(steps.per.day$steps)
+median.steps.per.day
+```
+
+4. Time series plot of the average number of steps taken
+
+```{r}
+steps.per.interval <- aggregate(steps~interval, data=activityData, mean, na.rm=T)
+plot(steps~interval, data=steps.per.interval, type="l")
+```
+
+5. The 5-minute interval that, on average, contains the maximum number of steps
+
+```{r}
+max.steps.interval <- steps.per.interval[which.max(steps.per.interval$steps),]$interval
+max.steps.interval
+```
+
+6. Code to describe and show a strategy for imputing missing data
+
+```{r}
+total.values.missing <- sum(is.na(activityData))
+total.values.missing
+```
+- Number of total missing values
+```{r}
+get.mean.steps.per.interval <- function(interval){
+  steps.per.interval[steps.per.interval$interval==interval,]$steps
+}
+
+activityDataFull <- activityData 
+for(i in 1:nrow(activityDataFull)) {
+    if(is.na(activityDataFull[i,]$steps)) {
+      activityDataFull[i,]$steps <- get.mean.steps.per.interval(activityDataFull[i,]$interval)
+    }
+}
+activityDataFull$steps <- as.numeric(activityDataFull$steps)
+```
+- New dataset with missing data filled in
+
+7. Histogram of the total number of steps taken each day after missing values are imputed
+
+```{r}
+library(tidyverse)
+total.steps.per.day.full <- aggregate(steps ~ date, data=activityDataFull, sum)
+hist(total.steps.per.day.full$steps)
+```
+
+8. Panel plot comparing the average number of steps taken per 5-minute interval across weekdays and weekends
+
+```{r}
+library(lubridate)
+activityDataFull$date <- ymd(activityDataFull$date)
+activityDataFull$day <- weekdays(activityDataFull$date)
+for(i in 1:nrow(activityDataFull)) {
+  if (activityDataFull[i,]$day %in% c("Saturday","Sunday")) {
+    activityDataFull[i,]$day <- "weekend"
+  }
+  else{
+    activityDataFull[i,]$day <- "weekday"
+  }
+}
+steps.by.day <- aggregate(activityDataFull$steps ~ activityDataFull$interval + activityDataFull$day, activityDataFull, mean)
+
+names(steps.by.day) <- c("interval", "day", "steps")
+library(lattice)
+xyplot(steps~interval | day, steps.by.day, type="l", layout=c(1,2),
+       xlab="Interval", ylab="Number of Steps")
+```
+
+9. All of the R code needed to reproduce the results (numbers, plots, etc.) in the report
+
+- see above
+
